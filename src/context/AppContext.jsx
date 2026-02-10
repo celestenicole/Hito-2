@@ -131,9 +131,19 @@ export function AppProvider({ children }) {
   }
 
   const agregarAlCarrito = async (item) => {
+    const pubId = parseInt(item.id || item.publicacion_id)
+    if (isNaN(pubId)) {
+      // Si el ID no es numérico, buscar la publicación correcta de la API por titulo
+      const pubAPI = publicaciones.find(p => typeof p.id === 'number' && p.titulo === item.titulo)
+      if (!pubAPI) {
+        Swal.fire({ icon: 'warning', title: 'Cargando datos...', text: 'Espera un momento mientras se cargan los destinos.', timer: 2000, showConfirmButton: false })
+        return
+      }
+      item = { ...item, id: pubAPI.id, publicacion_id: pubAPI.id }
+    }
     try {
       if (token && !token.startsWith('local-')) {
-        await axios.post(`${API}/carrito`, { publicacion_id: item.id || item.publicacion_id, cantidad: 1 }, getAuth(token))
+        await axios.post(`${API}/carrito`, { publicacion_id: parseInt(item.id || item.publicacion_id), cantidad: 1 }, getAuth(token))
         await cargarCarritoAPI()
       } else {
         setCarrito(prev => {
@@ -189,22 +199,24 @@ export function AppProvider({ children }) {
   }
 
   const toggleFavorito = async (id) => {
+    const numId = parseInt(id)
+    if (isNaN(numId)) return
     try {
       if (token && !token.startsWith('local-')) {
-        if (favoritos.includes(id)) {
-          await axios.delete(`${API}/favoritos/${id}`, getAuth(token))
+        if (favoritos.includes(numId)) {
+          await axios.delete(`${API}/favoritos/${numId}`, getAuth(token))
         } else {
-          await axios.post(`${API}/favoritos`, { publicacion_id: id }, getAuth(token))
+          await axios.post(`${API}/favoritos`, { publicacion_id: numId }, getAuth(token))
         }
         await cargarFavoritosAPI()
       } else {
-        setFavoritos(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+        setFavoritos(prev => prev.includes(numId) ? prev.filter(x => x !== numId) : [...prev, numId])
       }
     } catch (err) {
-      setFavoritos(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+      setFavoritos(prev => prev.includes(numId) ? prev.filter(x => x !== numId) : [...prev, numId])
     }
   }
-  const esFavorito = (id) => favoritos.includes(id)
+  const esFavorito = (id) => favoritos.includes(parseInt(id)) || favoritos.includes(id)
 
   const cargarOrdenesAPI = async () => {
     try {
