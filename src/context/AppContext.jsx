@@ -34,7 +34,7 @@ export function AppProvider({ children }) {
   }, [token])
 
   useEffect(() => {
-    if (token) {
+    if (token && !token.startsWith('local-')) {
       cargarPublicacionesAPI()
       cargarCarritoAPI()
       cargarFavoritosAPI()
@@ -57,11 +57,14 @@ export function AppProvider({ children }) {
       Swal.fire({ icon: 'success', title: 'Sesión iniciada', timer: 1500, showConfirmButton: false })
       return data.user
     } catch (err) {
-      const user = { id: Date.now(), nombre, email, avatar_url: null, rol: email === 'admin@admin.com' ? 'admin' : 'user' }
-      setUsuario(user)
-      setToken('local-' + Date.now())
-      Swal.fire({ icon: 'success', title: 'Sesión iniciada', timer: 1500, showConfirmButton: false })
-      return user
+      if (err.response?.status === 401) {
+        Swal.fire({ icon: 'error', title: 'Credenciales incorrectas', text: 'Email o contraseña incorrectos. Verifica tus datos.' })
+      } else if (err.response?.status === 404) {
+        Swal.fire({ icon: 'error', title: 'Usuario no encontrado', text: 'No existe una cuenta con ese email.' })
+      } else {
+        Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar con el servidor. Intenta de nuevo.' })
+      }
+      return null
     }
   }
 
@@ -74,14 +77,11 @@ export function AppProvider({ children }) {
       return data.user
     } catch (err) {
       if (err.response?.status === 409) {
-        Swal.fire({ icon: 'error', title: 'Email ya registrado', text: 'Intenta con otro correo.' })
-        return null
+        Swal.fire({ icon: 'error', title: 'Email ya registrado', text: 'Ya existe una cuenta con ese correo. Intenta iniciar sesión.' })
+      } else {
+        Swal.fire({ icon: 'error', title: 'Error al registrar', text: err.response?.data?.error || 'No se pudo crear la cuenta. Intenta de nuevo.' })
       }
-      const user = { id: Date.now(), nombre, email, avatar_url: null, rol: 'user' }
-      setUsuario(user)
-      setToken('local-' + Date.now())
-      Swal.fire({ icon: 'success', title: '¡Cuenta creada!', timer: 1500, showConfirmButton: false })
-      return user
+      return null
     }
   }
 

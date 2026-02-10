@@ -26,8 +26,8 @@ function Register() {
     const errs = validate()
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
-    await register(nombre, email, password)
-    navigate('/')
+    const result = await register(nombre, email, password)
+    if (result) navigate('/')
   }
 
   return (
@@ -53,14 +53,7 @@ function Register() {
                 <span className="input-group-text" style={{ borderRadius: '12px 0 0 12px', background: 'var(--bg)', border: '1px solid var(--border)' }}>
                   <i className="bi bi-person" style={{ color: 'var(--teal)' }}></i>
                 </span>
-                <input
-                  type="text"
-                  className={`form-control ${errors.nombre ? 'is-invalid' : ''}`}
-                  style={{ borderRadius: '0 12px 12px 0' }}
-                  placeholder="Tu nombre completo"
-                  value={nombre}
-                  onChange={e => { setNombre(e.target.value); setErrors(prev => ({ ...prev, nombre: '' })) }}
-                />
+                <input type="text" className={`form-control ${errors.nombre ? 'is-invalid' : ''}`} style={{ borderRadius: '0 12px 12px 0' }} placeholder="Tu nombre completo" value={nombre} onChange={e => { setNombre(e.target.value); setErrors(prev => ({ ...prev, nombre: '' })) }} />
               </div>
               {errors.nombre && <div className="text-danger small mt-1">{errors.nombre}</div>}
             </div>
@@ -71,14 +64,7 @@ function Register() {
                 <span className="input-group-text" style={{ borderRadius: '12px 0 0 12px', background: 'var(--bg)', border: '1px solid var(--border)' }}>
                   <i className="bi bi-envelope" style={{ color: 'var(--teal)' }}></i>
                 </span>
-                <input
-                  type="email"
-                  className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                  style={{ borderRadius: '0 12px 12px 0' }}
-                  placeholder="correo@ejemplo.com"
-                  value={email}
-                  onChange={e => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: '' })) }}
-                />
+                <input type="email" className={`form-control ${errors.email ? 'is-invalid' : ''}`} style={{ borderRadius: '0 12px 12px 0' }} placeholder="correo@ejemplo.com" value={email} onChange={e => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: '' })) }} />
               </div>
               {errors.email && <div className="text-danger small mt-1">{errors.email}</div>}
             </div>
@@ -89,23 +75,8 @@ function Register() {
                 <span className="input-group-text" style={{ borderRadius: '12px 0 0 12px', background: 'var(--bg)', border: '1px solid var(--border)' }}>
                   <i className="bi bi-lock" style={{ color: 'var(--teal)' }}></i>
                 </span>
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-                  style={{ borderRight: 'none' }}
-                  placeholder="Mínimo 6 caracteres"
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: '' })) }}
-                />
-                <button
-                  type="button"
-                  className="input-group-text"
-                  onClick={() => setShowPass(!showPass)}
-                  style={{
-                    borderRadius: '0 12px 12px 0', background: 'var(--bg)',
-                    border: '1px solid var(--border)', borderLeft: 'none', cursor: 'pointer'
-                  }}
-                >
+                <input type={showPass ? 'text' : 'password'} className={`form-control ${errors.password ? 'is-invalid' : ''}`} style={{ borderRight: 'none' }} placeholder="Mínimo 6 caracteres" value={password} onChange={e => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: '' })) }} />
+                <button type="button" className="input-group-text" onClick={() => setShowPass(!showPass)} style={{ borderRadius: '0 12px 12px 0', background: 'var(--bg)', border: '1px solid var(--border)', borderLeft: 'none', cursor: 'pointer' }}>
                   <i className={`bi ${showPass ? 'bi-eye-slash' : 'bi-eye'}`} style={{ color: 'var(--teal)' }}></i>
                 </button>
               </div>
