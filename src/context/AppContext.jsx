@@ -3,6 +3,100 @@ import axios from 'axios'
 import Swal from 'sweetalert2'
 import { destinos as destinosData } from '../data/destinos'
 
+// ===== ALERTAS PERSONALIZADAS =====
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 2000,
+  timerProgressBar: true,
+  background: '#1a2332',
+  color: '#e2e8f0',
+  didOpen: (toast) => {
+    toast.addEventListener('mouseenter', Swal.stopTimer)
+    toast.addEventListener('mouseleave', Swal.resumeTimer)
+  }
+})
+
+const alertSuccess = (title, text = '') => Toast.fire({
+  icon: 'success',
+  title,
+  text,
+  iconColor: '#10b981',
+})
+
+const alertError = (title, text = '') => Swal.fire({
+  icon: 'error',
+  title,
+  text,
+  background: '#1a2332',
+  color: '#e2e8f0',
+  confirmButtonColor: '#ef4444',
+  confirmButtonText: 'Entendido',
+  customClass: { popup: 'rounded-4' }
+})
+
+const alertWarning = (title, text = '') => Swal.fire({
+  icon: 'warning',
+  title,
+  text,
+  background: '#1a2332',
+  color: '#e2e8f0',
+  confirmButtonColor: '#f59e0b',
+  confirmButtonText: 'Ok',
+  timer: 2500,
+  timerProgressBar: true,
+  showConfirmButton: false,
+  customClass: { popup: 'rounded-4' }
+})
+
+const alertCompra = (total) => Swal.fire({
+  icon: 'success',
+  title: '¡Reserva confirmada!',
+  html: `
+    <div style="text-align:center">
+      <p style="color:#94a3b8;margin-bottom:8px">Tu pedido fue registrado exitosamente</p>
+      <div style="background:rgba(13,148,136,0.1);border:1px solid rgba(13,148,136,0.3);border-radius:12px;padding:16px;margin:12px 0">
+        <span style="font-size:2rem;font-weight:700;color:#0d9488">S/ ${total}</span>
+        <p style="color:#94a3b8;font-size:0.85rem;margin:4px 0 0">Total de tu reserva</p>
+      </div>
+      <p style="color:#94a3b8;font-size:0.85rem">Nos contactaremos contigo por WhatsApp para coordinar el pago</p>
+    </div>
+  `,
+  background: '#1a2332',
+  color: '#e2e8f0',
+  confirmButtonColor: '#0d9488',
+  confirmButtonText: 'Ver mis reservas',
+  showCancelButton: true,
+  cancelButtonText: 'Seguir viendo',
+  cancelButtonColor: '#64748b',
+  iconColor: '#10b981',
+  customClass: { popup: 'rounded-4' }
+})
+
+const alertEstado = (ordenId, status) => {
+  const config = {
+    pendiente: { color: '#f59e0b', emoji: '⏳', label: 'Pendiente' },
+    procesado: { color: '#3b82f6', emoji: '📋', label: 'En proceso' },
+    completado: { color: '#10b981', emoji: '✅', label: 'Completado' },
+    cancelada: { color: '#ef4444', emoji: '❌', label: 'Cancelada' },
+  }
+  const s = config[status] || config.pendiente
+  return Toast.fire({
+    icon: 'success',
+    title: `Orden #${ordenId}`,
+    text: `${s.emoji} Estado: ${s.label}`,
+    iconColor: s.color,
+  })
+}
+
+const alertCarrito = (titulo) => Toast.fire({
+  icon: 'success',
+  title: 'Agregado al carrito',
+  text: titulo,
+  iconColor: '#0d9488',
+})
+
 const AppContext = createContext()
 export const useAppContext = () => {
   const ctx = useContext(AppContext)
@@ -58,13 +152,13 @@ export function AppProvider({ children }) {
       const { data } = await axios.post(`${API}/auth/login`, { email, password })
       setUsuario(data.user)
       setToken(data.token)
-      Swal.fire({ icon: 'success', title: 'Sesión iniciada', timer: 1500, showConfirmButton: false })
+      alertSuccess('¡Bienvenido!', data.user.nombre)
       return data.user
     } catch (err) {
       if (err.response?.status === 401) {
-        Swal.fire({ icon: 'error', title: 'Credenciales incorrectas', text: 'Email o contraseña incorrectos.' })
+        alertError('Credenciales incorrectas', 'Email o contraseña incorrectos.')
       } else {
-        Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar con el servidor.' })
+        alertError('Error de conexión', 'No se pudo conectar con el servidor.')
       }
       return null
     }
@@ -75,13 +169,13 @@ export function AppProvider({ children }) {
       const { data } = await axios.post(`${API}/auth/register`, { nombre, email, password, avatar_url })
       setUsuario(data.user)
       setToken(data.token)
-      Swal.fire({ icon: 'success', title: '¡Cuenta creada!', timer: 1500, showConfirmButton: false })
+      alertSuccess('¡Cuenta creada!', 'Bienvenido a Viaje Conexión')
       return data.user
     } catch (err) {
       if (err.response?.status === 409) {
-        Swal.fire({ icon: 'error', title: 'Email ya registrado', text: 'Intenta iniciar sesión.' })
+        alertError('Email ya registrado', 'Intenta iniciar sesión.')
       } else {
-        Swal.fire({ icon: 'error', title: 'Error al registrar', text: err.response?.data?.error || 'Intenta de nuevo.' })
+        alertError('Error al registrar', err.response?.data?.error || 'Intenta de nuevo.')
       }
       return null
     }
@@ -105,9 +199,9 @@ export function AppProvider({ children }) {
         const nueva = { ...formData, id: 'pub-' + Date.now(), usuario_id: usuario.id, autor: usuario.nombre }
         setPublicaciones(prev => [nueva, ...prev])
       }
-      Swal.fire({ icon: 'success', title: 'Paquete publicado', timer: 1500, showConfirmButton: false })
+      alertSuccess('Destino publicado', 'Ya aparece en el catálogo')
     } catch (err) {
-      Swal.fire({ icon: 'error', title: 'Error al publicar', text: err.response?.data?.error || 'Intenta de nuevo' })
+      alertError('Error al publicar', err.response?.data?.error || 'Intenta de nuevo')
     }
   }
 
@@ -133,7 +227,7 @@ export function AppProvider({ children }) {
     if (isNaN(pubId)) {
       const pubAPI = publicaciones.find(p => typeof p.id === 'number' && p.titulo === item.titulo)
       if (!pubAPI) {
-        Swal.fire({ icon: 'warning', title: 'Cargando datos...', text: 'Espera un momento.', timer: 2000, showConfirmButton: false })
+        alertWarning('Cargando datos...', 'Espera un momento.')
         return
       }
       item = { ...item, id: pubAPI.id, publicacion_id: pubAPI.id }
@@ -149,7 +243,7 @@ export function AppProvider({ children }) {
           return [...prev, { id: item.id, publicacion_id: item.id, titulo: item.titulo, precio: item.precio, cantidad: 1 }]
         })
       }
-      Swal.fire({ icon: 'success', title: 'Agregado al carrito', text: item.titulo, timer: 1500, showConfirmButton: false })
+      alertCarrito(item.titulo)
     } catch (err) { console.error(err) }
   }
 
@@ -236,9 +330,9 @@ export function AppProvider({ children }) {
       await axios.put(`${API}/admin/ordenes/${ordenId}/estado`, { status }, getAuth(token))
       await cargarAdminOrdenes()
       await cargarOrdenesAPI()
-      Swal.fire({ icon: 'success', title: 'Estado actualizado', text: `Orden #${ordenId} → ${status}`, timer: 1500, showConfirmButton: false })
+      alertEstado(ordenId, status)
     } catch (err) {
-      Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.error || 'No se pudo actualizar' })
+      alertError('Error', err.response?.data?.error || 'No se pudo actualizar')
     }
   }
 
@@ -254,9 +348,10 @@ export function AppProvider({ children }) {
         setOrdenes(prev => [orden, ...prev])
         setCarrito([])
       }
-      Swal.fire({ icon: 'success', title: '¡Reserva confirmada!', text: `Total: S/ ${totalCarrito}. Nos contactaremos contigo pronto.`, timer: 3000, showConfirmButton: true, confirmButtonColor: '#0d9488' })
+      const result = await alertCompra(totalCarrito)
+      return result
     } catch (err) {
-      Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.error || 'No se pudo procesar' })
+      alertError('Error al procesar', err.response?.data?.error || 'No se pudo completar la reserva')
     }
   }
 

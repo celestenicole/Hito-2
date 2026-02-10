@@ -22,7 +22,7 @@ function CrearPublicacion() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.titulo || !form.precio || !form.imagen_url) {
-      Swal.fire({ icon: 'warning', title: 'Campos requeridos', text: 'Titulo, precio e imagen son obligatorios.' })
+      Swal.fire({ icon: 'warning', title: 'Campos requeridos', text: 'Titulo, precio e imagen son obligatorios.', background: '#1a2332', color: '#e2e8f0', confirmButtonColor: '#f59e0b', showConfirmButton: false, timer: 2500, timerProgressBar: true })
       return
     }
     await crearPublicacion({
