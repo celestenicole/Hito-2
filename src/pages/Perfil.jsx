@@ -1,31 +1,55 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppContext } from '../context/AppContext'
 import Swal from 'sweetalert2'
 
 function Perfil() {
-  const { usuario, publicaciones, ordenes, favoritos, logout, token } = useAppContext()
+  const { usuario, publicaciones, ordenes, favoritos } = useAppContext()
   const [editando, setEditando] = useState(false)
   const [nombre, setNombre] = useState(usuario?.nombre || '')
-  const [avatarUrl, setAvatarUrl] = useState(usuario?.avatar_url || '')
   const [telefono, setTelefono] = useState(usuario?.telefono || '')
-
-  const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+  const [avatarPreview, setAvatarPreview] = useState(usuario?.avatar_url || localStorage.getItem('vc_avatar') || '')
+  const fileInputRef = useRef(null)
 
   const misPubs = publicaciones.filter(p => p.usuario_id === usuario?.id || p.autor === usuario?.nombre)
   const misOrdenes = ordenes || []
 
-  const handleGuardar = async () => {
-    // Actualizar en localStorage por ahora
-    const updated = { ...usuario, nombre, avatar_url: avatarUrl, telefono }
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) {
+      Swal.fire({ icon: 'warning', title: 'Imagen muy grande', text: 'Máximo 2MB. Elige otra imagen.' })
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      setAvatarPreview(ev.target.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleGuardar = () => {
+    const updated = { ...usuario, nombre, telefono, avatar_url: avatarPreview }
     localStorage.setItem('vc_usuario', JSON.stringify(updated))
-    Swal.fire({ icon: 'success', title: 'Perfil actualizado', text: 'Los cambios se guardaron correctamente.', timer: 1500, showConfirmButton: false })
+    if (avatarPreview) localStorage.setItem('vc_avatar', avatarPreview)
+    Swal.fire({ icon: 'success', title: 'Perfil actualizado', timer: 1500, showConfirmButton: false })
     setEditando(false)
-    // Recargar para aplicar cambios
     setTimeout(() => window.location.reload(), 1600)
   }
 
   const inicial = usuario?.nombre?.charAt(0)?.toUpperCase() || '?'
+  const avatarSrc = avatarPreview || usuario?.avatar_url || localStorage.getItem('vc_avatar') || null
+
+  const renderAvatar = (size, fontSize) => {
+    if (avatarSrc) {
+      return <img src={avatarSrc} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: '4px solid #fff', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} />
+    }
+    return (
+      <div style={{ width: size, height: size, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), #ea580c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize, fontWeight: 700, color: '#fff', border: '4px solid #fff', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+        {inicial}
+      </div>
+    )
+  }
 
   return (
     <main className="pt-5">
@@ -35,58 +59,51 @@ function Perfil() {
             {/* Sidebar perfil */}
             <div className="col-lg-4">
               <div className="card border-0 shadow-lg rounded-4 overflow-hidden">
-                {/* Header con color */}
                 <div style={{ height: 80, background: 'linear-gradient(135deg, var(--teal), var(--bg-dark))' }}></div>
                 <div className="card-body text-center" style={{ marginTop: -45 }}>
-                  {/* Avatar */}
-                  {editando ? (
-                    <div className="mx-auto mb-3">
-                      {avatarUrl ? (
-                        <img src={avatarUrl} alt="" style={{ width: 90, height: 90, borderRadius: '50%', objectFit: 'cover', border: '4px solid #fff', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} />
-                      ) : (
-                        <div className="mx-auto" style={{ width: 90, height: 90, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), #ea580c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700, color: '#fff', border: '4px solid #fff', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-                          {inicial}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="mx-auto mb-3">
-                      {usuario?.avatar_url ? (
-                        <img src={usuario.avatar_url} alt="" style={{ width: 90, height: 90, borderRadius: '50%', objectFit: 'cover', border: '4px solid #fff', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} />
-                      ) : (
-                        <div className="mx-auto" style={{ width: 90, height: 90, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), #ea580c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700, color: '#fff', border: '4px solid #fff', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-                          {inicial}
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   {editando ? (
-                    <div className="text-start px-2">
-                      <div className="mb-3">
-                        <label className="form-label small fw-semibold">Nombre</label>
-                        <input type="text" className="form-control form-control-sm" value={nombre} onChange={e => setNombre(e.target.value)} />
-                      </div>
-                      <div className="mb-3">
-                        <label className="form-label small fw-semibold">Foto de perfil (URL)</label>
-                        <input type="url" className="form-control form-control-sm" placeholder="https://ejemplo.com/foto.jpg" value={avatarUrl} onChange={e => setAvatarUrl(e.target.value)} />
-                        <span className="text-muted" style={{ fontSize: '.7rem' }}>Pega el link de una imagen</span>
-                      </div>
-                      <div className="mb-3">
-                        <label className="form-label small fw-semibold">Teléfono</label>
-                        <input type="tel" className="form-control form-control-sm" placeholder="999 999 999" value={telefono} onChange={e => setTelefono(e.target.value)} />
-                      </div>
-                      <div className="d-flex gap-2">
-                        <button className="btn btn-brand btn-sm rounded-pill flex-grow-1" onClick={handleGuardar}>
-                          <i className="bi bi-check-lg me-1"></i>Guardar
+                    <>
+                      {/* Avatar con botón de subir */}
+                      <div className="position-relative d-inline-block mx-auto mb-3">
+                        {renderAvatar(90, '2rem')}
+                        <button type="button" className="btn position-absolute d-flex align-items-center justify-content-center"
+                          onClick={() => fileInputRef.current?.click()}
+                          style={{
+                            bottom: 0, right: -4, width: 32, height: 32, borderRadius: '50%',
+                            background: 'var(--teal)', color: '#fff', border: '3px solid #fff',
+                            fontSize: '.8rem', padding: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                          }}>
+                          <i className="bi bi-camera-fill"></i>
                         </button>
-                        <button className="btn btn-outline-secondary btn-sm rounded-pill" onClick={() => setEditando(false)}>
-                          Cancelar
-                        </button>
+                        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
                       </div>
-                    </div>
+                      <p className="text-muted mb-3" style={{ fontSize: '.72rem' }}>Click en el ícono de cámara para subir tu foto</p>
+
+                      <div className="text-start px-2">
+                        <div className="mb-3">
+                          <label className="form-label small fw-semibold">Nombre</label>
+                          <input type="text" className="form-control form-control-sm" value={nombre} onChange={e => setNombre(e.target.value)} />
+                        </div>
+                        <div className="mb-3">
+                          <label className="form-label small fw-semibold">Teléfono</label>
+                          <input type="tel" className="form-control form-control-sm" placeholder="999 999 999" value={telefono} onChange={e => setTelefono(e.target.value)} />
+                        </div>
+                        <div className="d-flex gap-2">
+                          <button className="btn btn-brand btn-sm rounded-pill flex-grow-1" onClick={handleGuardar}>
+                            <i className="bi bi-check-lg me-1"></i>Guardar
+                          </button>
+                          <button className="btn btn-outline-secondary btn-sm rounded-pill" onClick={() => { setEditando(false); setAvatarPreview(usuario?.avatar_url || localStorage.getItem('vc_avatar') || '') }}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    </>
                   ) : (
                     <>
+                      <div className="position-relative d-inline-block mx-auto mb-3">
+                        {renderAvatar(90, '2rem')}
+                      </div>
                       <h5 className="fw-bold mb-0">{usuario?.nombre}</h5>
                       <p className="text-muted small mb-1">{usuario?.email}</p>
                       {usuario?.telefono && <p className="text-muted small mb-1"><i className="bi bi-phone me-1"></i>{usuario.telefono}</p>}
@@ -109,18 +126,20 @@ function Perfil() {
 
                   {/* Stats */}
                   <div className="row text-center g-0">
-                    <div className="col-4">
+                    <div className={usuario?.rol === 'admin' ? 'col-4' : 'col-6'}>
                       <div className="fw-bold" style={{ color: 'var(--teal)', fontSize: '1.3rem' }}>{misOrdenes.length}</div>
                       <div className="text-muted" style={{ fontSize: '.7rem' }}>Compras</div>
                     </div>
-                    <div className="col-4">
+                    <div className={usuario?.rol === 'admin' ? 'col-4' : 'col-6'}>
                       <div className="fw-bold" style={{ color: 'var(--accent)', fontSize: '1.3rem' }}>{favoritos?.length || 0}</div>
                       <div className="text-muted" style={{ fontSize: '.7rem' }}>Favoritos</div>
                     </div>
-                    <div className="col-4">
-                      <div className="fw-bold" style={{ color: 'var(--teal)', fontSize: '1.3rem' }}>{misPubs.length}</div>
-                      <div className="text-muted" style={{ fontSize: '.7rem' }}>Publicados</div>
-                    </div>
+                    {usuario?.rol === 'admin' && (
+                      <div className="col-4">
+                        <div className="fw-bold" style={{ color: 'var(--teal)', fontSize: '1.3rem' }}>{misPubs.length}</div>
+                        <div className="text-muted" style={{ fontSize: '.7rem' }}>Publicados</div>
+                      </div>
+                    )}
                   </div>
 
                   <hr className="my-3" />
@@ -143,11 +162,18 @@ function Perfil() {
                       <i className="bi bi-chevron-right" style={{ fontSize: '.7rem' }}></i>
                     </Link>
                     {usuario?.rol === 'admin' && (
-                      <Link to="/admin" className="btn btn-sm rounded-pill d-flex align-items-center justify-content-between px-3"
-                        style={{ background: 'rgba(239,68,68,0.06)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.15)' }}>
-                        <span><i className="bi bi-shield-lock me-2"></i>Panel admin</span>
-                        <i className="bi bi-chevron-right" style={{ fontSize: '.7rem' }}></i>
-                      </Link>
+                      <>
+                        <Link to="/publicar" className="btn btn-sm rounded-pill d-flex align-items-center justify-content-between px-3"
+                          style={{ background: 'rgba(249,115,22,0.06)', color: 'var(--accent)', border: '1px solid rgba(249,115,22,0.15)' }}>
+                          <span><i className="bi bi-plus-circle me-2"></i>Publicar destino</span>
+                          <i className="bi bi-chevron-right" style={{ fontSize: '.7rem' }}></i>
+                        </Link>
+                        <Link to="/admin" className="btn btn-sm rounded-pill d-flex align-items-center justify-content-between px-3"
+                          style={{ background: 'rgba(239,68,68,0.06)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.15)' }}>
+                          <span><i className="bi bi-shield-lock me-2"></i>Panel admin</span>
+                          <i className="bi bi-chevron-right" style={{ fontSize: '.7rem' }}></i>
+                        </Link>
+                      </>
                     )}
                   </div>
                 </div>

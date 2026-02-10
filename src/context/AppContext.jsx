@@ -22,6 +22,7 @@ export function AppProvider({ children }) {
   const [carrito, setCarrito] = useState([])
   const [favoritos, setFavoritos] = useState([])
   const [ordenes, setOrdenes] = useState([])
+  const [adminOrdenes, setAdminOrdenes] = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -33,12 +34,10 @@ export function AppProvider({ children }) {
     else localStorage.removeItem('vc_token')
   }, [token])
 
-  // Cargar publicaciones siempre al inicio
   useEffect(() => {
     cargarPublicacionesAPI()
   }, [])
 
-  // Cargar datos del usuario cuando hay token
   useEffect(() => {
     if (token && !token.startsWith('local-')) {
       cargarCarritoAPI()
@@ -63,11 +62,9 @@ export function AppProvider({ children }) {
       return data.user
     } catch (err) {
       if (err.response?.status === 401) {
-        Swal.fire({ icon: 'error', title: 'Credenciales incorrectas', text: 'Email o contraseña incorrectos. Verifica tus datos.' })
-      } else if (err.response?.status === 404) {
-        Swal.fire({ icon: 'error', title: 'Usuario no encontrado', text: 'No existe una cuenta con ese email.' })
+        Swal.fire({ icon: 'error', title: 'Credenciales incorrectas', text: 'Email o contraseña incorrectos.' })
       } else {
-        Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar con el servidor. Intenta de nuevo.' })
+        Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar con el servidor.' })
       }
       return null
     }
@@ -82,9 +79,9 @@ export function AppProvider({ children }) {
       return data.user
     } catch (err) {
       if (err.response?.status === 409) {
-        Swal.fire({ icon: 'error', title: 'Email ya registrado', text: 'Ya existe una cuenta con ese correo. Intenta iniciar sesión.' })
+        Swal.fire({ icon: 'error', title: 'Email ya registrado', text: 'Intenta iniciar sesión.' })
       } else {
-        Swal.fire({ icon: 'error', title: 'Error al registrar', text: err.response?.data?.error || 'No se pudo crear la cuenta. Intenta de nuevo.' })
+        Swal.fire({ icon: 'error', title: 'Error al registrar', text: err.response?.data?.error || 'Intenta de nuevo.' })
       }
       return null
     }
@@ -96,6 +93,7 @@ export function AppProvider({ children }) {
     setCarrito([])
     setFavoritos([])
     setOrdenes([])
+    setAdminOrdenes([])
   }
 
   const crearPublicacion = async (formData) => {
@@ -135,7 +133,7 @@ export function AppProvider({ children }) {
     if (isNaN(pubId)) {
       const pubAPI = publicaciones.find(p => typeof p.id === 'number' && p.titulo === item.titulo)
       if (!pubAPI) {
-        Swal.fire({ icon: 'warning', title: 'Cargando datos...', text: 'Espera un momento mientras se cargan los destinos.', timer: 2000, showConfirmButton: false })
+        Swal.fire({ icon: 'warning', title: 'Cargando datos...', text: 'Espera un momento.', timer: 2000, showConfirmButton: false })
         return
       }
       item = { ...item, id: pubAPI.id, publicacion_id: pubAPI.id }
@@ -225,6 +223,25 @@ export function AppProvider({ children }) {
     } catch (err) { console.log('Órdenes local') }
   }
 
+  const cargarAdminOrdenes = async () => {
+    try {
+      if (!token || token.startsWith('local-')) return
+      const { data } = await axios.get(`${API}/admin/ordenes`, getAuth(token))
+      setAdminOrdenes(data)
+    } catch (err) { console.log('No es admin o error cargando órdenes admin') }
+  }
+
+  const actualizarEstadoOrden = async (ordenId, status) => {
+    try {
+      await axios.put(`${API}/admin/ordenes/${ordenId}/estado`, { status }, getAuth(token))
+      await cargarAdminOrdenes()
+      await cargarOrdenesAPI()
+      Swal.fire({ icon: 'success', title: 'Estado actualizado', text: `Orden #${ordenId} → ${status}`, timer: 1500, showConfirmButton: false })
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.error || 'No se pudo actualizar' })
+    }
+  }
+
   const confirmarCompra = async (datosCheckout = {}) => {
     if (!carrito.length) return
     try {
@@ -249,8 +266,7 @@ export function AppProvider({ children }) {
         await axios.put(`${API}/ordenes/${ordenId}/cancelar`, {}, getAuth(token))
         await cargarOrdenesAPI()
       } else {
-        const orden = ordenes.find(o => o.id === ordenId)
-        if (orden) { orden.items.forEach(item => agregarAlCarrito(item)); setOrdenes(prev => prev.filter(o => o.id !== ordenId)) }
+        setOrdenes(prev => prev.filter(o => o.id !== ordenId))
       }
     } catch (err) { console.error(err) }
   }
@@ -261,6 +277,7 @@ export function AppProvider({ children }) {
     carrito, agregarAlCarrito, quitarDelCarrito, actualizarCantidad, vaciarCarrito, totalCarrito,
     favoritos, toggleFavorito, esFavorito,
     ordenes, confirmarCompra, cancelarOrden,
+    adminOrdenes, cargarAdminOrdenes, actualizarEstadoOrden,
   }}>{children}</AppContext.Provider>
 }
 export default AppContext
