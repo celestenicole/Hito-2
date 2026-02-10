@@ -33,9 +33,14 @@ export function AppProvider({ children }) {
     else localStorage.removeItem('vc_token')
   }, [token])
 
+  // Cargar publicaciones siempre al inicio (no requiere token)
+  useEffect(() => {
+    cargarPublicacionesAPI()
+  }, [])
+
+  // Cargar datos del usuario cuando hay token
   useEffect(() => {
     if (token && !token.startsWith('local-')) {
-      cargarPublicacionesAPI()
       cargarCarritoAPI()
       cargarFavoritosAPI()
       cargarOrdenesAPI()
