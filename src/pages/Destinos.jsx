@@ -1,10 +1,23 @@
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { destinos, destinosPorCategoria } from '../data/destinos'
+import { destinos as destinosLocal, destinosPorCategoria } from '../data/destinos'
+import { useAppContext } from '../context/AppContext'
 
 function Destinos() {
+  const { publicaciones } = useAppContext()
   const costaRef = useRef(null)
   const sierraRef = useRef(null)
+
+  // Usar publicaciones API si hay más que locales (incluye las del admin)
+  const todosDestinos = publicaciones.length > destinosLocal.length ? publicaciones : destinosLocal
+
+  // Agrupar por categoría
+  const porCategoria = {
+    costa: todosDestinos.filter(d => d.categoria === 'costa'),
+    sierra: todosDestinos.filter(d => d.categoria === 'sierra'),
+    selva: todosDestinos.filter(d => d.categoria === 'selva'),
+    sudamerica: todosDestinos.filter(d => d.categoria === 'sudamerica'),
+  }
 
   const scrollTo = (ref) => {
     if (!ref.current) return
@@ -79,9 +92,9 @@ function Destinos() {
         {/* Listas por categoría */}
         <div className="row g-4">
           {[
-            { titulo: 'Costa', ref: costaRef, items: destinosPorCategoria.costa },
-            { titulo: 'Sierra', ref: sierraRef, items: destinosPorCategoria.sierra },
-            { titulo: 'Selva & Sudamérica', ref: null, items: [...(destinosPorCategoria.selva || []), ...(destinosPorCategoria.sudamerica || [])] },
+            { titulo: 'Costa', ref: costaRef, items: porCategoria.costa },
+            { titulo: 'Sierra', ref: sierraRef, items: porCategoria.sierra },
+            { titulo: 'Selva & Sudamérica', ref: null, items: [...(porCategoria.selva || []), ...(porCategoria.sudamerica || [])] },
           ].map((cat, ci) => (
             <div key={ci} className="col-lg-4">
               <h5 className="text-light mb-3" ref={cat.ref} style={{transition:'all 0.3s', display:'inline-block'}}>{cat.titulo}</h5>

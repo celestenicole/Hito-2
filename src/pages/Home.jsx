@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation, Pagination, Autoplay } from 'swiper/modules'
-import { destinos, blogPosts } from '../data/destinos'
+import { destinos as destinosLocal, blogPosts } from '../data/destinos'
 import VideoCard from '../components/VideoCard'
 import { useAppContext } from '../context/AppContext'
 
 function Home() {
-  const { agregarAlCarrito, usuario } = useAppContext()
+  const { agregarAlCarrito, usuario, publicaciones } = useAppContext()
+  // Combinar: publicaciones API + locales (sin duplicados)
+  const todosDestinos = publicaciones.length > destinosLocal.length ? publicaciones : destinosLocal
+  const destinos = todosDestinos
 
   return (
     <>
