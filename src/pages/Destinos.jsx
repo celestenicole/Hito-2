@@ -8,8 +8,12 @@ function Destinos() {
   const costaRef = useRef(null)
   const sierraRef = useRef(null)
 
-  // Usar publicaciones API si hay más que locales (incluye las del admin)
-  const todosDestinos = publicaciones.length > destinosLocal.length ? publicaciones : destinosLocal
+  // Combinar locales + nuevos de la API (sin duplicar los que ya existen localmente)
+  const titulosLocales = destinosLocal.map(d => d.titulo)
+  const nuevosAPI = publicaciones.filter(p =>
+    typeof p.id === 'number' && !titulosLocales.includes(p.titulo)
+  )
+  const todosDestinos = [...destinosLocal, ...nuevosAPI]
 
   // Agrupar por categoría
   const porCategoria = {
@@ -23,7 +27,6 @@ function Destinos() {
     if (!ref.current) return
     const y = ref.current.getBoundingClientRect().top + window.pageYOffset - 100
     window.scrollTo({ top: y, behavior: 'smooth' })
-    // Efecto highlight
     ref.current.style.transition = 'all 0.3s'
     ref.current.style.color = '#f97316'
     ref.current.style.transform = 'scale(1.05)'
@@ -32,6 +35,9 @@ function Destinos() {
       ref.current.style.transform = ''
     }, 1500)
   }
+
+  // Para destinos de API (sin slug), usar su ID numérico como link
+  const getLink = (d) => `/destinos/${d.slug || d.id}`
 
   return (
     <main style={{ minHeight: '100vh' }}><section className="vc-bg">
@@ -100,9 +106,9 @@ function Destinos() {
               <h5 className="text-light mb-3" ref={cat.ref} style={{transition:'all 0.3s', display:'inline-block'}}>{cat.titulo}</h5>
               <ul className="list-group list-group-flush small" style={{listStyle:'none',padding:0}}>
                 {cat.items.map((d, i) => (
-                  <li key={d.id} className="vc-list-item d-flex justify-content-between align-items-center">
+                  <li key={d.slug || d.id} className="vc-list-item d-flex justify-content-between align-items-center">
                     {d.titulo}
-                    <Link className={i === 0 ? 'vc-btn' : 'vc-btn-outline'} to={`/destinos/${d.slug || d.id}`}>Ver detalles</Link>
+                    <Link className={i === 0 ? 'vc-btn' : 'vc-btn-outline'} to={getLink(d)}>Ver detalles</Link>
                   </li>
                 ))}
               </ul>
