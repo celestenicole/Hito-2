@@ -33,7 +33,7 @@ export function AppProvider({ children }) {
     else localStorage.removeItem('vc_token')
   }, [token])
 
-  // Cargar publicaciones siempre al inicio (no requiere token)
+  // Cargar publicaciones siempre al inicio
   useEffect(() => {
     cargarPublicacionesAPI()
   }, [])
@@ -133,7 +133,6 @@ export function AppProvider({ children }) {
   const agregarAlCarrito = async (item) => {
     const pubId = parseInt(item.id || item.publicacion_id)
     if (isNaN(pubId)) {
-      // Si el ID no es numérico, buscar la publicación correcta de la API por titulo
       const pubAPI = publicaciones.find(p => typeof p.id === 'number' && p.titulo === item.titulo)
       if (!pubAPI) {
         Swal.fire({ icon: 'warning', title: 'Cargando datos...', text: 'Espera un momento mientras se cargan los destinos.', timer: 2000, showConfirmButton: false })
@@ -226,19 +225,19 @@ export function AppProvider({ children }) {
     } catch (err) { console.log('Órdenes local') }
   }
 
-  const confirmarCompra = async () => {
+  const confirmarCompra = async (datosCheckout = {}) => {
     if (!carrito.length) return
     try {
       if (token && !token.startsWith('local-')) {
-        await axios.post(`${API}/ordenes`, {}, getAuth(token))
+        await axios.post(`${API}/ordenes`, datosCheckout, getAuth(token))
         await cargarCarritoAPI()
         await cargarOrdenesAPI()
       } else {
-        const orden = { id: Date.now(), usuario_email: usuario.email, fecha: new Date().toLocaleString(), items: [...carrito], total: totalCarrito, status: 'pendiente' }
+        const orden = { id: Date.now(), usuario_email: usuario.email, fecha: new Date().toLocaleString(), items: [...carrito], total: totalCarrito, status: 'pendiente', ...datosCheckout }
         setOrdenes(prev => [orden, ...prev])
         setCarrito([])
       }
-      Swal.fire({ icon: 'success', title: '¡Compra realizada!', text: `Total: S/ ${totalCarrito}`, timer: 2000, showConfirmButton: false })
+      Swal.fire({ icon: 'success', title: '¡Reserva confirmada!', text: `Total: S/ ${totalCarrito}. Nos contactaremos contigo pronto.`, timer: 3000, showConfirmButton: true, confirmButtonColor: '#0d9488' })
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.error || 'No se pudo procesar' })
     }

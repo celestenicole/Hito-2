@@ -17,6 +17,7 @@ import Perfil from './pages/Perfil'
 import CrearPublicacion from './pages/CrearPublicacion'
 import Favoritos from './pages/Favoritos'
 import Carrito from './pages/Carrito'
+import Checkout from './pages/Checkout'
 import Admin from './pages/Admin'
 import NotFound from './pages/NotFound'
 
@@ -41,6 +42,7 @@ function App() {
           <Route path="/publicar" element={<ProtectedRoute><CrearPublicacion /></ProtectedRoute>} />
           <Route path="/favoritos" element={<ProtectedRoute><Favoritos /></ProtectedRoute>} />
           <Route path="/carrito" element={<ProtectedRoute><Carrito /></ProtectedRoute>} />
+          <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
