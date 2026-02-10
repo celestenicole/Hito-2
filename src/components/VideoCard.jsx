@@ -1,13 +1,24 @@
 import { useNavigate } from 'react-router-dom'
 import { useAppContext } from '../context/AppContext'
+
 function VideoCard({ destino, showPrice = false, goCarrito = false }) {
-  const { agregarAlCarrito, usuario } = useAppContext()
+  const { agregarAlCarrito, usuario, publicaciones } = useAppContext()
   const navigate = useNavigate()
-  const videoSrc = `/assets/${destino.video}`
+  const videoSrc = `/assets/${destino.video || destino.imagen_url}`
+
   const handleAdd = () => {
-    agregarAlCarrito(destino)
+    // Buscar el ID numérico de la API
+    let itemParaCarrito = destino
+    if (typeof destino.id !== 'number') {
+      const match = publicaciones.find(p => typeof p.id === 'number' && p.titulo === destino.titulo)
+      if (match) {
+        itemParaCarrito = { ...destino, id: match.id, publicacion_id: match.id, precio: match.precio }
+      }
+    }
+    agregarAlCarrito(itemParaCarrito)
     if (goCarrito) setTimeout(() => navigate('/carrito'), 800)
   }
+
   return (
     <div className="card h-100 card-destino">
       <div className="ratio ratio-4x3 overflow-hidden rounded-4">
@@ -37,4 +48,5 @@ function VideoCard({ destino, showPrice = false, goCarrito = false }) {
     </div>
   )
 }
+
 export default VideoCard
